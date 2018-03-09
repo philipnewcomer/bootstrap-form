@@ -1,7 +1,5 @@
 <?php
 
-use Watson\BootstrapForm\Type;
-
 return [
 
     /*
@@ -10,11 +8,11 @@ return [
     |--------------------------------------------------------------------------
     |
     | Here you may specify the default form type for the open method. You have
-    | the options of Type::HORIZONTAL, Type::VERTICAL and Type::INLINE.
+    | the options of 'horizontal', 'inline' and 'vertical'.
     |
     */
 
-    'type' => Type::VERTICAL,
+    'type' => 'vertical',
 
     /*
     |--------------------------------------------------------------------------

@@ -107,8 +107,8 @@ class BootstrapForm
         $options['role'] = 'form';
 
         // Set the class for the form type.
-        if (!array_key_exists('class', $options)) {
-            $options['class'] = $this->getType();
+        if (!array_key_exists('class', $options) && $this->isInline()) {
+            $options['class'] = 'form-inline';
         }
 
         if (array_key_exists('left_column_class', $options)) {
@@ -209,7 +209,7 @@ class BootstrapForm
      */
     public function vertical(array $options = [])
     {
-        $this->setType(Type::VERTICAL);
+        $this->setType('vertical');
 
         return $this->open($options);    }
 
@@ -221,7 +221,7 @@ class BootstrapForm
      */
     public function inline(array $options = [])
     {
-        $this->setType(Type::INLINE);
+        $this->setType('inline');
 
         return $this->open($options);
     }
@@ -234,7 +234,7 @@ class BootstrapForm
      */
     public function horizontal(array $options = [])
     {
-        $this->setType(Type::HORIZONTAL);
+        $this->setType('horizontal');
 
         return $this->open($options);
     }
@@ -815,6 +815,10 @@ class BootstrapForm
     {
         $class = 'form-group';
 
+        if ($this->isHorizontal()) {
+            $class .= ' row';
+        }
+
         if ($name) {
             $class .= ' ' . $this->getFieldErrorClass($name);
         }
@@ -888,7 +892,17 @@ class BootstrapForm
      */
     public function isHorizontal()
     {
-        return $this->getType() === Type::HORIZONTAL;
+        return $this->getType() === 'horizontal';
+    }
+
+    /**
+     * Determine if the form is of an inline type.
+     *
+     * @return bool
+     */
+    public function isInline()
+    {
+        return $this->getType() === 'inline';
     }
 
     /**
