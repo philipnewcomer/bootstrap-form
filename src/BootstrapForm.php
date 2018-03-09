@@ -1085,7 +1085,7 @@ class BootstrapForm
     protected function getHelpText($field, array $options = [])
     {
         if (array_key_exists('help_text', $options)) {
-            return '<span class="help-block">' . e($options['help_text']) . '</span>';
+            return '<small class="form-text text-muted">' . e($options['help_text']) . '</small>';
         }
 
         return '';
