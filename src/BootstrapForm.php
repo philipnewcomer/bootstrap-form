@@ -819,10 +819,6 @@ class BootstrapForm
             $class .= ' row';
         }
 
-        if ($name) {
-            $class .= ' ' . $this->getFieldErrorClass($name);
-        }
-
         return array_merge(['class' => $class], $options);
     }
 
@@ -837,6 +833,10 @@ class BootstrapForm
     protected function getFieldOptions(array $options = [], $name = null)
     {
         $options['class'] = trim('form-control ' . $this->getFieldOptionsClass($options));
+
+        if ($name) {
+            $options['class'] .= ' ' . $this->getFieldErrorClass($name);
+        }
 
         // If we've been provided the input name and the ID has not been set in the options,
         // we'll use the name as the ID to hook it up with the label.
@@ -1039,13 +1039,13 @@ class BootstrapForm
 
     /**
      * Get the first error for a given field, using the provided
-     * format, defaulting to the normal Bootstrap 3 format.
+     * format, defaulting to the normal Bootstrap 4 format.
      *
      * @param  string  $field
      * @param  string  $format
      * @return mixed
      */
-    protected function getFieldError($field, $format = '<span class="help-block">:message</span>')
+    protected function getFieldError($field, $format = '<span class="invalid-feedback">:message</span>')
     {
         $field = $this->flattenFieldName($field);
 
@@ -1064,13 +1064,13 @@ class BootstrapForm
 
     /**
      * Return the error class if the given field has associated
-     * errors, defaulting to the normal Bootstrap 3 error class.
+     * errors, defaulting to the normal Bootstrap 4 error class.
      *
      * @param  string  $field
      * @param  string  $class
      * @return string
      */
-    protected function getFieldErrorClass($field, $class = 'has-error')
+    protected function getFieldErrorClass($field, $class = 'is-invalid')
     {
         return $this->getFieldError($field) ? $class : null;
     }
