@@ -425,13 +425,15 @@ class BootstrapForm
      */
     public function checkboxElement($name, $label = null, $value = 1, $checked = null, $inline = false, array $options = [])
     {
-        $label = $label === false ? null : $this->getLabelTitle($label, $name);
-
-        $labelOptions = $inline ? ['class' => 'checkbox-inline'] : [];
+        $options['class'] = isset($options['class']) ? $options['class'] : 'form-check-input';
+        $options['id'] = isset($options['id']) ? $options['id'] : $name;
         $inputElement = $this->form->checkbox($name, $value, $checked, $options);
-        $labelElement = '<label ' . $this->html->attributes($labelOptions) . '>' . $inputElement . $label . '</label>';
 
-        return $inline ? $labelElement : '<div class="checkbox">' . $labelElement . '</div>';
+        $label = $label === false ? null : $this->getLabelTitle($label, $name);
+        $labelOptions = ['class' => 'form-check-label', 'for' => $options['id']];
+        $labelElement = '<label ' . $this->html->attributes($labelOptions) . '>' . $label . '</label>';
+
+        return '<div class="form-check">' . $inputElement . $labelElement . '</div>';
     }
 
     /**
