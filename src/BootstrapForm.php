@@ -868,8 +868,9 @@ class BootstrapForm
     protected function getLabelOptions(array $options = [])
     {
         $class = 'control-label';
+
         if ($this->isHorizontal()) {
-            $class .= ' ' . $this->getLeftColumnClass();
+            $class .= ' col-form-label ' . $this->getLeftColumnClass();
         }
 
         return array_merge(['class' => trim($class)], $options);
