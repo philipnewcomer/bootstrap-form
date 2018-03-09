@@ -107,8 +107,8 @@ class BootstrapForm
         $options['role'] = 'form';
 
         // Set the class for the form type.
-        if (!array_key_exists('class', $options)) {
-            $options['class'] = $this->getType();
+        if (!array_key_exists('class', $options) && $this->isInline()) {
+            $options['class'] = 'form-inline';
         }
 
         if (array_key_exists('left_column_class', $options)) {
@@ -209,7 +209,7 @@ class BootstrapForm
      */
     public function vertical(array $options = [])
     {
-        $this->setType(Type::VERTICAL);
+        $this->setType('vertical');
 
         return $this->open($options);    }
 
@@ -221,7 +221,7 @@ class BootstrapForm
      */
     public function inline(array $options = [])
     {
-        $this->setType(Type::INLINE);
+        $this->setType('inline');
 
         return $this->open($options);
     }
@@ -234,7 +234,7 @@ class BootstrapForm
      */
     public function horizontal(array $options = [])
     {
-        $this->setType(Type::HORIZONTAL);
+        $this->setType('horizontal');
 
         return $this->open($options);
     }
@@ -425,13 +425,15 @@ class BootstrapForm
      */
     public function checkboxElement($name, $label = null, $value = 1, $checked = null, $inline = false, array $options = [])
     {
-        $label = $label === false ? null : $this->getLabelTitle($label, $name);
-
-        $labelOptions = $inline ? ['class' => 'checkbox-inline'] : [];
+        $options['class'] = isset($options['class']) ? $options['class'] : 'form-check-input';
+        $options['id'] = isset($options['id']) ? $options['id'] : $name;
         $inputElement = $this->form->checkbox($name, $value, $checked, $options);
-        $labelElement = '<label ' . $this->html->attributes($labelOptions) . '>' . $inputElement . $label . '</label>';
 
-        return $inline ? $labelElement : '<div class="checkbox">' . $labelElement . '</div>';
+        $label = $label === false ? null : $this->getLabelTitle($label, $name);
+        $labelOptions = ['class' => 'form-check-label', 'for' => $options['id']];
+        $labelElement = '<label ' . $this->html->attributes($labelOptions) . '>' . $label . '</label>';
+
+        return '<div class="form-check">' . $inputElement . $labelElement . '</div>';
     }
 
     /**
@@ -815,8 +817,8 @@ class BootstrapForm
     {
         $class = 'form-group';
 
-        if ($name) {
-            $class .= ' ' . $this->getFieldErrorClass($name);
+        if ($this->isHorizontal()) {
+            $class .= ' row';
         }
 
         return array_merge(['class' => $class], $options);
@@ -833,6 +835,10 @@ class BootstrapForm
     protected function getFieldOptions(array $options = [], $name = null)
     {
         $options['class'] = trim('form-control ' . $this->getFieldOptionsClass($options));
+
+        if ($name) {
+            $options['class'] .= ' ' . $this->getFieldErrorClass($name);
+        }
 
         // If we've been provided the input name and the ID has not been set in the options,
         // we'll use the name as the ID to hook it up with the label.
@@ -864,8 +870,9 @@ class BootstrapForm
     protected function getLabelOptions(array $options = [])
     {
         $class = 'control-label';
+
         if ($this->isHorizontal()) {
-            $class .= ' ' . $this->getLeftColumnClass();
+            $class .= ' col-form-label ' . $this->getLeftColumnClass();
         }
 
         return array_merge(['class' => trim($class)], $options);
@@ -888,7 +895,17 @@ class BootstrapForm
      */
     public function isHorizontal()
     {
-        return $this->getType() === Type::HORIZONTAL;
+        return $this->getType() === 'horizontal';
+    }
+
+    /**
+     * Determine if the form is of an inline type.
+     *
+     * @return bool
+     */
+    public function isInline()
+    {
+        return $this->getType() === 'inline';
     }
 
     /**
@@ -1025,13 +1042,13 @@ class BootstrapForm
 
     /**
      * Get the first error for a given field, using the provided
-     * format, defaulting to the normal Bootstrap 3 format.
+     * format, defaulting to the normal Bootstrap 4 format.
      *
      * @param  string  $field
      * @param  string  $format
      * @return mixed
      */
-    protected function getFieldError($field, $format = '<span class="help-block">:message</span>')
+    protected function getFieldError($field, $format = '<span class="invalid-feedback">:message</span>')
     {
         $field = $this->flattenFieldName($field);
 
@@ -1050,13 +1067,13 @@ class BootstrapForm
 
     /**
      * Return the error class if the given field has associated
-     * errors, defaulting to the normal Bootstrap 3 error class.
+     * errors, defaulting to the normal Bootstrap 4 error class.
      *
      * @param  string  $field
      * @param  string  $class
      * @return string
      */
-    protected function getFieldErrorClass($field, $class = 'has-error')
+    protected function getFieldErrorClass($field, $class = 'is-invalid')
     {
         return $this->getFieldError($field) ? $class : null;
     }
@@ -1071,7 +1088,7 @@ class BootstrapForm
     protected function getHelpText($field, array $options = [])
     {
         if (array_key_exists('help_text', $options)) {
-            return '<span class="help-block">' . e($options['help_text']) . '</span>';
+            return '<small class="form-text text-muted">' . e($options['help_text']) . '</small>';
         }
 
         return '';
