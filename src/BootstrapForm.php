@@ -2,20 +2,20 @@
 
 namespace Watson\BootstrapForm;
 
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Collective\Html\FormBuilder;
 use Collective\Html\HtmlBuilder;
-use Illuminate\Contracts\Config\Repository as Config;
-use Illuminate\Session\SessionManager as Session;
-use Illuminate\Support\Arr;
 use Illuminate\Support\HtmlString;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Traits\Macroable;
+use Illuminate\Session\SessionManager as Session;
+use Illuminate\Contracts\Config\Repository as Config;
 
 class BootstrapForm
 {
     use Macroable;
-    
+
     /**
      * Illuminate HtmlBuilder instance.
      *
@@ -73,11 +73,19 @@ class BootstrapForm
     protected $iconPrefix;
 
     /**
-     * The errorbag that is used for validation (multiple forms)
+     * The errorbag that is used for validation (multiple forms).
      *
      * @var string
      */
-    protected $errorBag = 'default';
+    protected $errorBag;
+
+    /**
+     * The error class.
+     *
+     * @var string
+     */
+    protected $errorClass;
+
 
     /**
      * Construct the class.
@@ -109,7 +117,7 @@ class BootstrapForm
 
         // Set the class for the form type.
         if (!array_key_exists('class', $options) && $this->isInline()) {
-            $options['class'] = 'form-inline';
+            $options['class'] = Type::INLINE;
         }
 
         if (array_key_exists('left_column_class', $options)) {
@@ -210,7 +218,7 @@ class BootstrapForm
      */
     public function vertical(array $options = [])
     {
-        $this->setType('vertical');
+        $this->setType(Type::VERTICAL);
 
         return $this->open($options);    }
 
@@ -222,7 +230,7 @@ class BootstrapForm
      */
     public function inline(array $options = [])
     {
-        $this->setType('inline');
+        $this->setType(Type::INLINE);
 
         return $this->open($options);
     }
@@ -235,7 +243,7 @@ class BootstrapForm
      */
     public function horizontal(array $options = [])
     {
-        $this->setType('horizontal');
+        $this->setType(Type::HORIZONTAL);
 
         return $this->open($options);
     }
@@ -434,7 +442,9 @@ class BootstrapForm
         $labelOptions = ['class' => 'form-check-label', 'for' => $options['id']];
         $labelElement = '<label ' . $this->html->attributes($labelOptions) . '>' . $label . '</label>';
 
-        return '<div class="form-check">' . $inputElement . $labelElement . '</div>';
+        $wrapperOptions = ['class' => $inline ? 'form-check form-check-inline' : 'form-check'];
+
+        return '<div ' . $this->html->attributes($wrapperOptions) . '>' . $inputElement . $labelElement . '</div>';
     }
 
     /**
@@ -497,16 +507,19 @@ class BootstrapForm
      */
     public function radioElement($name, $label = null, $value = null, $checked = null, $inline = false, array $options = [])
     {
-        $label = $label === false ? null : $this->getLabelTitle($label, $name);
-
         $value = is_null($value) ? $label : $value;
 
-        $labelOptions = $inline ? ['class' => 'radio-inline'] : [];
-
+        $options['class'] = isset($options['class']) ? $options['class'] : 'form-check-input';
+        $options['id'] = isset($options['id']) ? $options['id'] : $name;
         $inputElement = $this->form->radio($name, $value, $checked, $options);
-        $labelElement = '<label ' . $this->html->attributes($labelOptions) . '>' . $inputElement . $label . '</label>';
 
-        return $inline ? $labelElement : '<div class="radio">' . $labelElement . '</div>';
+        $label = $label === false ? null : $this->getLabelTitle($label, $name);
+        $labelOptions = ['class' => 'form-check-label', 'for' => $options['id']];
+        $labelElement = '<label ' . $this->html->attributes($labelOptions) . '>' . $label . '</label>';
+
+        $wrapperOptions = ['class' => $inline ? 'form-check form-check-inline' : 'form-check'];
+
+        return '<div ' . $this->html->attributes($wrapperOptions) . '>' . $inputElement . $labelElement . '</div>';
     }
 
     /**
@@ -731,13 +744,35 @@ class BootstrapForm
     {
         $label = $this->getLabelTitle($label, $name);
 
+        $inputElement = isset($options['prefix']) ? $options['prefix'] : '';
+
         $options = $this->getFieldOptions($options, $name);
-        $inputElement = $this->form->select($name, $list, $selected, $options);
+        $inputElement .= $this->form->select($name, $list, $selected, $options);
+
+        if (isset($options['suffix'])) {
+            $inputElement .= $options['suffix'];
+        }
+
+        if (isset($options['prefix']) || isset($options['suffix'])) {
+            $inputElement = '<div class="input-group">' . $inputElement . '</div>';
+        }
 
         $wrapperOptions = $this->isHorizontal() ? ['class' => $this->getRightColumnClass()] : [];
         $wrapperElement = '<div' . $this->html->attributes($wrapperOptions) . '>' . $inputElement . $this->getFieldError($name) . $this->getHelpText($name, $options) . '</div>';
 
         return $this->getFormGroup($name, $label, $wrapperElement);
+    }
+
+
+    /**
+     * Wrap the content in Laravel's HTML string class.
+     *
+     * @param  string  $html
+     * @return \Illuminate\Support\HtmlString
+     */
+    protected function toHtmlString($html)
+    {
+        return new HtmlString($html);
     }
 
     /**
@@ -766,13 +801,13 @@ class BootstrapForm
      *
      * @param  string  $name
      * @param  string  $element
-     * @return string
+     * @return \Illuminate\Support\HtmlString
      */
     protected function getFormGroupWithoutLabel($name, $element)
     {
         $options = $this->getFormGroupOptions($name);
 
-        return '<div' . $this->html->attributes($options) . '>' . $element . '</div>';
+        return $this->toHtmlString('<div' . $this->html->attributes($options) . '>' . $element . '</div>');
     }
 
     /**
@@ -781,13 +816,13 @@ class BootstrapForm
      * @param  string  $name
      * @param  string  $value
      * @param  string  $element
-     * @return string
+     * @return \Illuminate\Support\HtmlString
      */
     protected function getFormGroupWithLabel($name, $value, $element)
     {
         $options = $this->getFormGroupOptions($name);
 
-        return '<div' . $this->html->attributes($options) . '>' . $this->label($name, $value) . $element . '</div>';
+        return $this->toHtmlString('<div' . $this->html->attributes($options) . '>' . $this->label($name, $value) . $element . '</div>');
     }
 
     /**
@@ -870,10 +905,9 @@ class BootstrapForm
      */
     protected function getLabelOptions(array $options = [])
     {
-        $class = 'control-label';
-
+        $class = 'col-form-label';
         if ($this->isHorizontal()) {
-            $class .= ' col-form-label ' . $this->getLeftColumnClass();
+            $class .= ' ' . $this->getLeftColumnClass();
         }
 
         return array_merge(['class' => trim($class)], $options);
@@ -896,7 +930,7 @@ class BootstrapForm
      */
     public function isHorizontal()
     {
-        return $this->getType() === 'horizontal';
+        return $this->getType() === Type::HORIZONTAL;
     }
 
     /**
@@ -906,7 +940,7 @@ class BootstrapForm
      */
     public function isInline()
     {
-        return $this->getType() === 'inline';
+        return $this->getType() === Type::INLINE;
     }
 
     /**
@@ -990,7 +1024,17 @@ class BootstrapForm
      */
     public function getIconPrefix()
     {
-        return $this->iconPrefix ?: $this->config->get('bootstrap_form.icon_prefix', 'fa fa-');
+        return $this->iconPrefix ?: $this->config->get('bootstrap_form.icon_prefix');
+    }
+
+     /**
+     * Get the error class.
+     *
+     * @return string
+     */
+    public function getErrorClass()
+    {
+        return $this->errorClass ?: $this->config->get('bootstrap_form.error_class');
     }
 
     /**
@@ -1000,7 +1044,7 @@ class BootstrapForm
      */
     protected function getErrorBag()
     {
-        return $this->errorBag;
+        return $this->errorBag ?: $this->config->get('bootstrap_form.error_bag');
     }
 
     /**
@@ -1056,7 +1100,11 @@ class BootstrapForm
         if ($this->getErrors()) {
             $allErrors = $this->config->get('bootstrap_form.show_all_errors');
 
-            $errorBag = $this->getErrors()->{$this->getErrorBag()};
+            if ($this->getErrorBag()) {
+                $errorBag = $this->getErrors()->{$this->getErrorBag()};
+            } else {
+                $errorBag = $this->getErrors();
+            }
 
             if ($allErrors) {
                 return implode('', $errorBag->get($field, $format));
@@ -1074,9 +1122,9 @@ class BootstrapForm
      * @param  string  $class
      * @return string
      */
-    protected function getFieldErrorClass($field, $class = 'is-invalid')
+    protected function getFieldErrorClass($field)
     {
-        return $this->getFieldError($field) ? $class : null;
+        return $this->getFieldError($field) ? $this->getErrorClass() : null;
     }
 
     /**
@@ -1084,12 +1132,12 @@ class BootstrapForm
      *
      * @param  string  $field
      * @param  array   $options
-     * @return string
+     * @return \Illuminate\Support\HtmlString
      */
     protected function getHelpText($field, array $options = [])
     {
         if (array_key_exists('help_text', $options)) {
-            return '<small class="form-text text-muted">' . e($options['help_text']) . '</small>';
+            return $this->toHtmlString('<span class="form-text text-muted">' . e($options['help_text']) . '</span>');
         }
 
         return '';
